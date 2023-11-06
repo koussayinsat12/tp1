@@ -7,7 +7,7 @@ import { CreateTodoDto } from './dto/create.todo.dto';
 import { UpdateTodoDto } from './dto/update.todo.dto';
 import { FindOneOptions } from 'typeorm/find-options/FindOneOptions';
 import { DeleteResult, UpdateResult } from 'typeorm';
-
+const { faker } = require('@faker-js/faker');
 @Injectable()
 export class TodoService {
     constructor(@InjectRepository(TodoEntity) private readonly todoRepository: Repository<TodoEntity>) {}
@@ -66,7 +66,51 @@ async getTodoById(id: number): Promise<TodoEntity> {
 
   return todo;
 }
+async getTodosByCriteria(name?: string, description?: string, status?: StatusEnum,limit?: number,
+  offset?: number
+): Promise<TodoEntity[]> {
+  const query = this.todoRepository.createQueryBuilder('todo');
+
+  if (name) {
+    query.andWhere('todo.name LIKE :name', { name: `%${name}%` }); 
+  }
+
+  if (description) {
+    query.andWhere('todo.description LIKE :description', { description: `%${description}%` }); 
+  }
+
+  if (status) {
+    query.andWhere('todo.status = :status', { status });
+  }
+  if (limit) {
+    query.limit(limit);
+  }
+
+  if (offset) {
+    query.offset(offset);
+  }
+
+  return await query.getMany();
 }
+
+async seedData() {
+  const todos = Array(100)
+    .fill(null)
+    .map(() => {
+      const todo = new TodoEntity();
+      todo.name = faker.lorem.words(3);
+      todo.description = faker.lorem.sentences(3);
+      const statusValues = Object.values(StatusEnum);
+      const randomIndex = Math.floor(Math.random() * statusValues.length);
+      todo.status = statusValues[randomIndex];
+      this.todoRepository.save(todo);
+    });
+
+}
+}
+
+
+
 
 
 
