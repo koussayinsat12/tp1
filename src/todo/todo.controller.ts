@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create.todo.dto';
 import { TodoService } from './todo.service';
 import { UpdateTodoDto } from './dto/update.todo.dto';
@@ -10,19 +10,22 @@ export class TodoController {
 
 constructor(private readonly todoService: TodoService) {}
 
-  @Post()
-  async addTodo(@Body() createTodoDto: CreateTodoDto) {
-    return this.todoService.addTodo(createTodoDto);
+  @Post('add')
+  async addTodo(@Req() req: any,@Body() createTodoDto: CreateTodoDto) {
+    const userId = req.userId;
+    return this.todoService.addTodo(createTodoDto,userId);
   }
-  @Put(':id')
-  async update(@Param('id') id,@Body() updateTodoDto:Partial<UpdateTodoDto>){
-    return await this.todoService.updateTodo(id,updateTodoDto);
+  @Put('update/:id')
+  async update(@Req()req,@Param('id') id,@Body() updateTodoDto:Partial<UpdateTodoDto>){
+    const userId = req.userId;
+    return await this.todoService.updateTodo(id,updateTodoDto,userId);
   }
-  @Delete(':id')
-  async delete(@Param('id') id){
-  await this.todoService.deleteTodo(id)
+  @Delete('delete/:id')
+  async delete(@Req() req,@Param('id') id){
+    const userId=req.userId
+  await this.todoService.deleteTodo(id,userId)
   }
-  @Get('/page')
+  @Get('page')
   async findTodos(
     @Query('name') name?: string, 
     @Query('description') description?: string,
@@ -44,7 +47,6 @@ constructor(private readonly todoService: TodoService) {}
   async getTodobyId(@Param('id') id):Promise<TodoEntity>{
     console.log(id)
     return await this.todoService.getTodoById(id)
-
   }
  
 

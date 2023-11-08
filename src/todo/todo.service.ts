@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TodoEntity } from './entities/todo.entity';
 import { Repository } from 'typeorm/repository/Repository';
@@ -12,15 +12,16 @@ const { faker } = require('@faker-js/faker');
 export class TodoService {
     constructor(@InjectRepository(TodoEntity) private readonly todoRepository: Repository<TodoEntity>) {}
 
-    async addTodo(createTodoDto:CreateTodoDto): Promise<TodoEntity> {
+    async addTodo(createTodoDto:CreateTodoDto,userId:number): Promise<TodoEntity> {
       const name=createTodoDto.name
       const description=createTodoDto.description
       const status=createTodoDto.status
-      const newTodo = this.todoRepository.create({ name,description,status });
+      const createdby=userId
+      const newTodo = this.todoRepository.create({ name,createdby,description,status});
       return this.todoRepository.save(newTodo);
     }
     
-    async updateTodo(id,updateTodo:Partial<UpdateTodoDto>): Promise<TodoEntity> {
+    async updateTodo(id,updateTodo:Partial<UpdateTodoDto>,userId:number): Promise<TodoEntity> {
       const findOneOptions: FindOneOptions = {
         where: { id: id }, 
       }
@@ -28,11 +29,23 @@ export class TodoService {
       if (!existingTodo) {
         throw new NotFoundException(`Le Todo avec l'ID ${id} n'a pas été trouvé.`);
       }
-  
+      if (existingTodo.createdby!=userId){
+        throw new UnauthorizedException(`Accès refusé, User avec l'Id ${userId} est non autorisé à mettre à jour cet todo avec Id ${id}.`)
+      }
       const updatedTodo = Object.assign(existingTodo,updateTodo);
       return this.todoRepository.save(updatedTodo);
 }
-async deleteTodo(id: number): Promise<DeleteResult> {
+async deleteTodo(id: number,userId:number): Promise<DeleteResult> {
+  const findOneOptions: FindOneOptions = {
+    where: { id: id }, 
+  }
+  const existingTodo = await this.todoRepository.findOne(findOneOptions);
+  if (!existingTodo) {
+    throw new NotFoundException(`Le Todo avec l'ID ${id} n'a pas été trouvé.`);
+  }
+  if (existingTodo.createdby!=userId){
+    throw new UnauthorizedException(`Accès refusé, User avec l'Id ${userId} est non autorisé à supprimer cet todo avec Id ${id}.`)
+  }
  return await this.todoRepository.delete(id);
 }
 async softdeleteTodo(id: number): Promise<UpdateResult> {

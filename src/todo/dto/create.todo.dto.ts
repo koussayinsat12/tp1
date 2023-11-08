@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, Length, IsIn } from 'class-validator';
-import { ErrorMessages } from './error.messages';
+import { ErrorMessages } from '../../utils/error.messages';
 import StatusEnum from '../entities/status.enum';
 export class CreateTodoDto {
   @IsNotEmpty()
